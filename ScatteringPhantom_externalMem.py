@@ -571,11 +571,11 @@ class ScatterPhantomGenerator(Sequence):
             Store data if requested
             """
             if self.save_to_dir != None:
-                sXImg = array_to_img(imX[:,:,0,0])
+                sXImg = array_to_img(numpy.reshape(imX[:,:,0,0], (96,96,1)))
                 #save_img(os.path.join(self.save_to_dir,fname_in+"."+self.save_format),sXimg)
                 fname_in = "img_"+str(imgIndex)
                 sXImg.save(os.path.join(self.save_to_dir,fname_in+"."+self.save_format))
-                sYImg = array_to_img(imY[:,:,0,0])
+                sYImg = array_to_img(numpy.reshape(imY[:,:,0,0], (96,96,1)))
                 #save_img(os.path.join(self.save_to_dir,fname_out+"."+self.save_format), sYImg)
                 fname_out = "img_" + str(imgIndex)
                 sYImg.save(os.path.join(self.save_to_dir,fname_out+"."+self.save_format))

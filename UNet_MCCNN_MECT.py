@@ -46,7 +46,8 @@ class UNetFactory(object):
         conv3D_out = Conv3D(1, (1,1,1), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(fuseNets)
         print("Create output conv network with shape {}".format(conv3D_out.shape))
         #self.output = Add()([self.input, conv3D_out])
-        self.output = conv3D_out
+#        self.output = conv3D_out
+        self.output = net2D
         
         #fuseNets = concatenate([net1D, net2D, net3D], axis=-2)
         #print("Create fused network with shape {}".format(fuseNets.shape))

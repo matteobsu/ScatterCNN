@@ -1,9 +1,10 @@
 activate neuralnets
 cd C:\Users\mbusi\Documents\scnns-master\src\
 
-python main_spectral.py -r D:\mbusi\SCNN\final_data_32ch\TtTp\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp\validation\
+python main_spectral.py -r D:\mbusi\SCNN\20190604_TtTp_2\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp\validation\
+python eval_spectral.py -m D:\mbusi\SCNN\20190604_TtTp_1\ -D D:\mbusi\SCNN\final_data_32ch\TtTp\test\ -O D:\mbusi\SCNN\20190604_TtTp_1\results_1\ -M pack10020 -H D:\mbusi\SCNN\20190604_TtTp_1\output\pack10020_Thist.pkl
 
-python eval_MCCNN_from_directory.py -m D:\mbusi\SCNN\20190604_TtTp\ -D D:\mbusi\SCNN\final_data_32ch\test\ -O D:\mbusi\SCNN\20190604_TtTp\results_1\ -M pack10020 -H D:\mbusi\SCNN\20190604_TtTp\output\pack10020_Thist.pkl
+python eval_MCCNN_from_directory.py -m D:\mbusi\SCNN\20190604_TtTp\ -D D:\mbusi\SCNN\final_data_32ch\TtTp\test\ -O D:\mbusi\SCNN\20190604_TtTp\results_1\ -M pack10010 -H D:\mbusi\SCNN\20190604_TtTp\output\pack10010_Thist.pkl
 
 python eval_MCCNN_from_directory.py -m D:\mbusi\SCNN\20190603_absorptiondata_1\ -D D:\mbusi\SCNN\final_data_32ch\absorption\test\ -O D:\mbusi\SCNN\20190603_absorptiondata_1\results_1\ -M pack10020 -H D:\mbusi\SCNN\20190603_absorptiondata_1\output\pack10020_Thist.pkl
 python eval_spectral_notnorm.py -m D:\mbusi\SCNN\20190603_absorptiondata_1\ -D D:\mbusi\SCNN\final_data_32ch\absorption\test\ -O D:\mbusi\SCNN\20190603_absorptiondata_1\results_1\ -M pack10020 -H D:\mbusi\SCNN\20190603_absorptiondata_1\output\pack10020_Thist.pkl

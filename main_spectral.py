@@ -38,7 +38,7 @@ input_image_size = (128,128)       # needs to fit with the actual data dim
 target_image_size = (96,96)  # free to choose for resizing
 input_image_shape = (128,128,32,1)
 target_image_shape = (96,96,32,1)
-epoch_steps=402
+epoch_steps = 402
 input_channels = 32
 output_channels = 32
 batchSize=8
@@ -186,12 +186,12 @@ if __name__ == '__main__':
     else:      
         datagen = ScatterPhantomGenerator(batchSize,input_image_size,input_channels,target_image_size,output_channels,
                                           useResize=True,useCrop=False,useZoom=False,useAWGN=False,useMedian=False,useGaussian=False,
-                                          useFlipping=False,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=cache_mem)
+                                          useFlipping=False,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=cache_mem,save_to_dir="D:\\mbusi\\SCNN\\dumpfold\\train\\")
         datagen.prepareDirectFileInput([training_directory])
         
         validgen = ScatterPhantomGenerator(batchSize,input_image_size,input_channels,target_image_size,output_channels,
                                           useResize=True,useCrop=False,useZoom=False,useAWGN=False,useMedian=False,useGaussian=False,
-                                          useFlipping=False,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=valid_cache_mem)
+                                          useFlipping=False,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=valid_cache_mem,save_to_dir="D:\\mbusi\\SCNN\\dumpfold\\valid\\")
         validgen.prepareDirectFileInput([validation_directory])
     
     callbacks = []
