@@ -268,12 +268,15 @@ class ScatterPhantomGenerator(Sequence):
         self.in_dir = ""
         self.save_to_dir=save_to_dir
         self.save_format=save_format
+        self.store_img = True
         #===============================#
         #== caching-related variables ==#
         #===============================#
         self.useCache = useCache
         self.cache = cache
         self._lock_ = threadLockVar
+        self.pid = 0
+        self.seeded = False
         #======================#
         #== batch size setup ==#
         #======================#
@@ -453,6 +456,12 @@ class ScatterPhantomGenerator(Sequence):
         return int(numpy.ceil(len(self.fileArray)/float(self.batch_size)))
     
     def __getitem__(self, idx):
+        self.pid = os.getpid()
+        if self.seeded == False:
+            numpy.random.seed(self.pid)
+            random.seed(self.pid)
+            self.seeded = True
+
         if self.useCache:
             flushCache = False
             with self._lock_:
@@ -511,7 +520,7 @@ class ScatterPhantomGenerator(Sequence):
                 imX = imX.astype(numpy.float32)
                 imY = imY.astype(numpy.float32)
 
-            fname_in = "img_{}_{}_{}".format(self._epoch_num_, idx, j)
+            fname_in = "img_{}_{}_{}_{}".format(self._epoch_num_, self.pid, idx, j)
             """
             Data augmentation
             """
@@ -570,17 +579,26 @@ class ScatterPhantomGenerator(Sequence):
             """
             Store data if requested
             """
-            if self.save_to_dir != None:
-                sXImg = array_to_img(numpy.reshape(imX[:,:,0,0], (96,96,1)))
-                #save_img(os.path.join(self.save_to_dir,fname_in+"."+self.save_format),sXimg)
-                fname_in = "img_"+str(imgIndex)
-                sXImg.save(os.path.join(self.save_to_dir,fname_in+"."+self.save_format))
-                sYImg = array_to_img(numpy.reshape(imY[:,:,0,0], (96,96,1)))
-                #save_img(os.path.join(self.save_to_dir,fname_out+"."+self.save_format), sYImg)
-                fname_out = "img_" + str(imgIndex)
-                sYImg.save(os.path.join(self.save_to_dir,fname_out+"."+self.save_format))
+            if (self.save_to_dir is not None) and (self.store_img==True):
+                #print("Range phantom (after scaling): {}; scale: {}; shape {}".format([numpy.min(imX), numpy.max(imX)], [min(minValX), max(maxValX)], imX.shape))
+                #print("Range FBP (after scaling): {}; scale: {}; shape {}".format([numpy.min(imY), numpy.max(imY)], [min(minValY), max(maxValY)], imY.shape))
+                store_imx = imX[:, :, 0, 0]
+                if len(store_imx.shape) < 3:
+                    store_imx = store_imx.reshape(store_imx.shape + (1,))
+                sXImg = array_to_img(store_imx, data_format='channels_last')
+                # save_img(os.path.join(self.save_to_dir,fname_in+"."+self.save_format),sXimg)
+                sXImg.save(os.path.join(self.save_to_dir, fname_in + "_inputX." + self.save_format))
+                store_imy = imY[:, :, 0, 0]
+                if len(store_imy.shape) < 3:
+                    store_imy = store_imy.reshape(store_imy.shape + (1,))
+                sYImg = array_to_img(store_imy, data_format='channels_last')
+                # save_img(os.path.join(self.save_to_dir,fname_out+"."+self.save_format), sYImg)
+                sYImg.save(os.path.join(self.save_to_dir, fname_in + "_outputY." + self.save_format))
             batchX[j] = imX
             batchY[j] = imY
+
+        # === Comment Chris: only store images on the first epoch - not on all === #
+        self.store_img=False
         return batchX, batchY
     
     def on_epoch_end(self):
