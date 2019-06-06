@@ -459,7 +459,6 @@ class ScatterPhantomGenerator(Sequence):
         self.pid = os.getpid()
         if self.seeded == False:
             numpy.random.seed(self.pid)
-            random.seed(self.pid)
             self.seeded = True
 
         if self.useCache:
