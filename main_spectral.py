@@ -173,26 +173,33 @@ if __name__ == '__main__':
     valid_cache_mem.allocate()
 # =============================================================================
 
+    nsteps = int(math.ceil(epoch_steps / batchSize))
+    valid_nsteps = min([int(validgen.numImages / batchSize), int(128 / batchSize)])
+
     if augment:
         datagen = ScatterPhantomGenerator(batchSize,input_image_size,input_channels,target_image_size,output_channels,
                                           useResize=True,useCrop=False,useZoom=False,useAWGN=True,useMedian=True,useGaussian=False,
                                           useFlipping=True,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=cache_mem)
         datagen.prepareDirectFileInput([training_directory])
+        datagen.set_nsteps(nsteps)
 
         validgen = ScatterPhantomGenerator(batchSize,input_image_size,input_channels,target_image_size,output_channels,
                                           useResize=True,useCrop=False,useZoom=False,useAWGN=False,useMedian=False,useGaussian=False,
                                           useFlipping=False,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=valid_cache_mem)
         validgen.prepareDirectFileInput([validation_directory])
+        validgen.set_nsteps(valid_nsteps)
     else:      
         datagen = ScatterPhantomGenerator(batchSize,input_image_size,input_channels,target_image_size,output_channels,
                                           useResize=True,useCrop=False,useZoom=False,useAWGN=False,useMedian=False,useGaussian=False,
                                           useFlipping=False,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=cache_mem,save_to_dir="D:\\mbusi\\SCNN\\dumpfold\\train\\")
         datagen.prepareDirectFileInput([training_directory])
+        datagen.set_nsteps(nsteps)
         
         validgen = ScatterPhantomGenerator(batchSize,input_image_size,input_channels,target_image_size,output_channels,
                                           useResize=True,useCrop=False,useZoom=False,useAWGN=False,useMedian=False,useGaussian=False,
                                           useFlipping=False,useNormData=True, threadLockVar=trainingLock,useCache=True,cache=valid_cache_mem,save_to_dir="D:\\mbusi\\SCNN\\dumpfold\\valid\\")
         validgen.prepareDirectFileInput([validation_directory])
+        validgen.set_nsteps(valid_nsteps)
     
     callbacks = []
     callbacks.append(ModelCheckpoint(modelpath=modelfile,

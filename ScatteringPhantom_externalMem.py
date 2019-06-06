@@ -277,6 +277,7 @@ class ScatterPhantomGenerator(Sequence):
         self._lock_ = threadLockVar
         self.pid = 0
         self.seeded = False
+        self._nsteps = int(numpy.ceil(len(self.fileArray)/float(self.batch_size)))
         #======================#
         #== batch size setup ==#
         #======================#
@@ -452,8 +453,13 @@ class ScatterPhantomGenerator(Sequence):
 
 
 
+    def set_nsteps(self, nsteps):
+        self._nsteps = nsteps
+
     def __len__(self):
-        return int(numpy.ceil(len(self.fileArray)/float(self.batch_size)))
+        return self._nsteps
+    #    self._nsteps = int(numpy.ceil(len(self.fileArray)/float(self.batch_size)))
+    #    return int(numpy.ceil(len(self.fileArray)/float(self.batch_size)))
     
     def __getitem__(self, idx):
         self.pid = os.getpid()
@@ -606,129 +612,255 @@ class ScatterPhantomGenerator(Sequence):
 
 class ScatterPhantomGenerator_inMemory(Sequence):
     
-    def __init__(self, images_in, images_out, image_size=(128, 128,1), batch_size=1, useAWGN = False, gauss_mu=0.5, gauss_stdDev=0.1, useRotation=False, rotationRange=(0,360), targetSize=(128,128), useZoom=False, zoomFactor=1.0, useFlipping=False, useNormData=False, save_to_dir=None, save_format="png"):
+    def __init__(self, images_in,images_out, batch_size=1, image_size=(128, 128), input_channels=32, target_size=(128, 128), output_channels=1, useResize=False,
+                 useCrop=False, useZoom=False, zoom_factor_range=(0.95,1.05), useAWGN = False, useMedian=False, useGaussian=False,
+                 useFlipping=False, useNormData=False, save_to_dir=None, save_format="png", threadLockVar=None):
         self.batch_size = batch_size
         self.image_size = image_size
-        #self.image_path = image_path
-        #self.augment_flow = augment_flow
-        #self.k = (self.kernel_size-1)//2
-        self.dtype = numpy.float32
-        self.useAWGH = useAWGN
-        self.gauss_mu = gauss_mu
-        self.gauss_stdDev = gauss_stdDev
-        self.rotationRange = rotationRange
-        self.targetSize=targetSize
-        self.useRotation = useRotation
-        self.useClip = useRotation
-        self.zoomFactor = zoomFactor
+        self.target_size = target_size
+        self.input_channels = input_channels
+        self.output_channels = output_channels
+        self.x_dtype_in = None
+        self.y_dtype_in = None
+        self.useResize = useResize
+        self.useCrop = useCrop
+        self.useAWGN = useAWGN
         self.useZoom = useZoom
+        self.zoom_factor_range = zoom_factor_range
         self.useFlipping = useFlipping
+        self.useMedian = useMedian
+        self.medianSize = [0,1,3,5,7,9,11]
+        self.useGaussian = useGaussian
+        self.gaussianRange = (0, 0.075)
         self.useNormData = useNormData
-        dims = targetSize
-        self.targetSize = (self.targetSize[0], self.targetSize[1], self.image_size[2])
-        #========================================#
-        #== clipping-related image information ==#
-        #========================================#
-        self.im_center = numpy.array([(self.image_size[0]-1)/2, (self.image_size[1]-1)/2], dtype=numpy.int32)
-        self.im_size = numpy.array([(self.targetSize[0]-1)/2, (self.targetSize[1]-1)/2], dtype=numpy.int32)
-        left = self.im_center[0]-self.im_size[0]
-        right = left+self.targetSize[0]
-        top = self.im_center[1]-self.im_size[1]
-        bottom = top+self.targetSize[1]
-        self.im_bounds = (left,right,top,bottom)
+        self._epoch_num_ = 0
+        self.numImages = 0
+
+        # ========================================#
+        # == zoom-related image information ==#
+        # ========================================#
+        self.im_center = None
+        self.im_shift = None
+        self.im_bounds = None
+        self.im_center = numpy.array([int(self.target_size[0] - 1) / 2, int(self.target_size[1] - 1) / 2], dtype=numpy.int32)
+        self.im_shift = numpy.array([(self.image_size[0] - 1) / 2, (self.image_size[1] - 1) / 2], dtype=numpy.int32)
+        left = max(self.im_shift[0] - self.im_center[0],0)
+        right = min(left + self.target_size[0],self.image_size[0])
+        top = max(self.im_shift[1] - self.im_center[1],0)
+        bottom = min(top + self.target_size[1],self.image_size[1])
+        self.im_bounds = (left, right, top, bottom)
         #===================================#
         #== directory-related information ==#
         #===================================#
         self.X = images_in
         self.Y = images_out
         self.numImages = self.X.shape[0]
-        outImgX = self.X[0]
-        if len(outImgX)<3:
-            outImgX = outImgX.reshape(outImgX.shape + (1,))
-        self.image_size =outImgX.shape
         self.save_to_dir=save_to_dir
         self.save_format=save_format
-    
+        self.store_img = True
+        self.pid = 0
+        self.seeded = False
+        self._lock_ = threadLockVar
+        self._nsteps = int(numpy.ceil(float(len(self.X[0])) / float(self.batch_size)))
+        #======================#
+        #== batch size setup ==#
+        #======================#
+        self.batch_image_size_X = (self.batch_size, self.image_size[0], self.image_size[1], self.input_channels, 1)
+        self.batch_image_size_Y = (self.batch_size, self.image_size[0], self.image_size[1], self.output_channels, 1)
+        if self.useCrop or self.useResize:
+            self.batch_image_size_X = (self.batch_size, self.target_size[0], self.target_size[1], self.input_channels, 1)
+            self.batch_image_size_Y = (self.batch_size, self.target_size[0], self.target_size[1], self.output_channels, 1)
+
+        ###################################
+        # === actually prepare images === #
+        #=================================#
+        inImgDims = (self.image_size[0], self.image_size[1], self.input_channels, 1)
+        outImgDims = (self.image_size[0], self.image_size[1], self.output_channels, 1)
+
+        #imX = numpy.array(f['Data_X'], order='F').transpose()
+        if len(self.X.shape[0]):
+            imX = self.X[0]
+            self.x_dtype_in = imX.dtype
+            if len(imX.shape) > 3:
+                imX = numpy.squeeze(imX[:, :, 0, :])
+            if len(imX.shape) < 3:
+                imX = imX.reshape(imX.shape + (1,))
+            # === we need to feed the data as 3D+1 channel data stack === #
+            if len(imX.shape) < 4:
+                imX = imX.reshape(imX.shape + (1,))
+
+            if imX.shape != inImgDims:
+                print("Error - read data shape ({}) and expected data shape ({}) of X are not equal. EXITING ...".format(imX.shape, inImgDims))
+                exit()
+
+        #numpy.array(f['Data_Y'], order='F').transpose()
+        if len(self.self.Y[0]):
+            imY = self.Y[0]
+            self.y_dtype_in = imY.dtype
+            if len(imY.shape) > 3:
+                imY = numpy.squeeze(imY[:,:,0,:])
+            if len(imY.shape) < 3:
+                imY = imY.reshape(imY.shape + (1,))
+            # === we need to feed the data as 3D+1 channel data stack === #
+            if len(imY.shape) < 4:
+                imY = imY.reshape(imY.shape + (1,))
+
+            if imY.shape != outImgDims:
+                print("Error - read data shape ({}) and expected data shape ({}) of X are not equal. EXITING ...".format(imX.shape,inImgDims))
+                exit()
+
+        # ======================================== #
+        # ==== crop-related image information ==== #
+        # ======================================== #
+        self.im_center = None
+        self.im_shift = None
+        self.im_bounds = None
+        self.im_center = numpy.array([int(self.target_size[0] - 1) / 2, int(self.target_size[1] - 1) / 2], dtype=numpy.int32)
+        self.im_shift = numpy.array([(self.image_size[0] - 1) / 2, (self.image_size[1] - 1) / 2], dtype=numpy.int32)
+        left = max(self.im_shift[0] - self.im_center[0],0)
+        right = min(left + self.target_size[0],self.image_size[0])
+        top = max(self.im_shift[1] - self.im_center[1],0)
+        bottom = min(top + self.target_size[1],self.image_size[1])
+        self.im_bounds = (left, right, top, bottom)
+
+    def set_nsteps(self, nsteps):
+        self._nsteps = nsteps
+
     def __len__(self):
-        return int(numpy.ceil(self.numImages/float(self.batch_size)))
+        return self._nsteps
     
     def __getitem__(self, idx):
+        self.pid = os.getpid()
+        if self.seeded == False:
+            numpy.random.seed(self.pid)
+            self.seeded = True
+
         batchX = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1],self.image_size[2]),dtype=self.dtype)
         batchY = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1],self.image_size[2]),dtype=self.dtype)
         if self.useClip or self.useZoom:
             batchX = numpy.zeros((self.batch_size,self.targetSize[0],self.targetSize[1],self.image_size[2]),dtype=self.dtype)
             batchY = numpy.zeros((self.batch_size,self.targetSize[0],self.targetSize[1],self.image_size[2]),dtype=self.dtype)
         for j in itertools.islice(itertools.count(),0,self.batch_size):
-            #imgIndex = min([(idx*self.batch_size)+j, self.numImages-1])
+            imX = None
+            minValX = None
+            maxValX = None
+            imY = None
+            minValY = None
+            maxValY = None
             imgIndex = ((idx*self.batch_size)+j) % (self.numImages-1)
             #if shuffle:
             #    batchIndex = numpy.random.randint(0, min([self.numImages,len(self.fileArray)]))
             """
             Load data from memory
             """
-            outImgX = self.X[imgIndex]
-            outImgY = self.Y[imgIndex]
-            if len(outImgX)<3:
-                outImgX = outImgX.reshape(outImgX.shape + (1,))
-            if len(outImgY)<3:
-                outImgY = outImgY.reshape(outImgY.shape + (1,))
-            if outImgX.shape != outImgY.shape:
+            imX = self.X[imgIndex]
+            imY = self.Y[imgIndex]
+            # === we need to feed the data as 3D+1 channel data stack === #
+            if len(imX.shape) < 3:
+                imX = imX.reshape(imX.shape + (1,))
+            if len(imX.shape) < 4:
+                imX = imX.reshape(imX.shape + (1,))
+            if len(imY.shape) < 3:
+                imY = imY.reshape(imY.shape + (1,))
+            if len(imY.shape) < 4:
+                imY = imY.reshape(imY.shape + (1,))
+
+            if imX.shape != imY.shape:
+                raise RuntimeError("Input- and Output sizes do not match.")
+            # == Note: do data normalization here to reduce memory footprint ==#
+            """
+            Data Normalisation
+            """
+            if self.useNormData:
+                minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
+                minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels, minx=minValX, maxx=maxValX)
+            imX = imX.astype(numpy.float32)
+            imY = imY.astype(numpy.float32)
+            if imX.shape != imY.shape:
                 raise RuntimeError("Input- and Output sizes do not match.")
             #self.image_size =outImgX.shape
+            fname_in = "img_{}_{}_{}_{}".format(self._epoch_num_, self.pid, idx, j)
+
             """
             Data augmentation
             """
-            if self.useNormData:
-                minValX = numpy.min(outImgX)
-                maxValX = numpy.max(outImgX)
-                outImgX = (outImgX-minValX)/(maxValX-minValX)
-                outImgX = outImgX.astype(numpy.float32)
-                minValY = numpy.min(outImgY)
-                maxValY = numpy.max(outImgY)
-                outImgY = (outImgY-minValY)/(maxValY-minValY)
-                outImgY = outImgY.astype(numpy.float32)
+            input_target_size = self.target_size + (self.input_channels, )
+            output_target_size = self.target_size + (self.output_channels, )
             if self.useZoom:
-                outImgX = ndimage.zoom(outImgX, [self.zoomFactor,self.zoomFactor,1], order=3)
-                outImgY = ndimage.zoom(outImgY, [self.zoomFactor,self.zoomFactor,1], order=3)
-            if self.useRotation:
-                outImgX = ndimage.rotate(outImgX, numpy.random.uniform(self.rotationRange[0], self.rotationRange[1]), axes=(1,0), order=2, mode='mirror')
-                outImgY = ndimage.rotate(outImgY, numpy.random.uniform(self.rotationRange[0], self.rotationRange[1]), axes=(1,0), order=2, mode='mirror')
-            if self.useClip:
-                outImgX = outImgX[self.im_bounds[0]:self.im_bounds[1],self.im_bounds[2]:self.im_bounds[3],0:self.targetSize[2]]
-                outImgY = outImgY[self.im_bounds[0]:self.im_bounds[1],self.im_bounds[2]:self.im_bounds[3],0:self.targetSize[2]]
-            if self.useAWGH: # only applies to input data
-                outImgX = util.random_noise(outImgX, mode='gaussian', mean=self.gauss_mu, var=(self.gauss_stdDev*self.gauss_stdDev))
+                _zoom_factor = numpy.random.uniform(self.zoom_factor_range[0], self.zoom_factor_range[1])
+                for channelIdx in itertools.islice(itertools.count(), 0, self.input_channels):
+                    imX[:,:,channelIdx] = clipped_zoom(imX[:,:,channelIdx], _zoom_factor, order=3, mode='reflect')
+                    imY[:,:,channelIdx] = clipped_zoom(imY[:,:,channelIdx], _zoom_factor, order=3, mode='reflect')
+            if self.useResize:
+                imX = transform.resize(imX, input_target_size, order=3, mode='reflect')
+                imY = transform.resize(imY, output_target_size, order=3, mode='constant')
+            if self.useCrop:
+                imX = imX[self.im_bounds[0]:self.im_bounds[1], self.im_bounds[2]:self.im_bounds[3],:]
+                imY = imY[self.im_bounds[0]:self.im_bounds[1], self.im_bounds[2]:self.im_bounds[3],:]
             if self.useFlipping:
                 mode = numpy.random.randint(0,4)
                 if mode == 0:   # no modification
                     pass
                 if mode == 1:
-                    outImgX = numpy.fliplr(outImgX)
-                    outImgY = numpy.fliplr(outImgY)
-                    #outImgX = ndimage.geometric_transform(outImgX, flipSpectralX, mode='nearest')
-                    #outImgY = ndimage.geometric_transform(outImgY, flipSpectralX, mode='nearest')
+                    imX = numpy.fliplr(imX)
+                    imY = numpy.fliplr(imY)
                 if mode == 2:
-                    outImgX = numpy.flipud(outImgX)
-                    outImgY = numpy.flipud(outImgY)
-                    #outImgX = ndimage.geometric_transform(outImgX, flipSpectralY, mode='nearest')
-                    #outImgY = ndimage.geometric_transform(outImgY, flipSpectralY, mode='nearest')
+                    imX = numpy.flipud(imX)
+                    imY = numpy.flipud(imY)
                 if mode == 3:
-                    outImgX = numpy.fliplr(outImgX)
-                    outImgX = numpy.flipud(outImgX)
-                    outImgY = numpy.fliplr(outImgY)
-                    outImgY = numpy.flipud(outImgY)
-                    #outImgX = ndimage.geometric_transform(outImgX, flipSpectralXY, mode='nearest')
-                    #outImgY = ndimage.geometric_transform(outImgY, flipSpectralXY, mode='nearest')
+                    imX = numpy.fliplr(imX)
+                    imX = numpy.flipud(imX)
+                    imY = numpy.fliplr(imY)
+                    imY = numpy.flipud(imY)
+            if self.useAWGN: # only applies to input data
+                if self.input_channels > 1:
+                    for channelIdx in itertools.islice(itertools.count(), 0, self.input_channels):
+                        rectMin = numpy.min(imX[:,:,channelIdx])
+                        rectMax = numpy.max(imX[:,:,channelIdx])
+                        imX[:,:,channelIdx] = util.random_noise(imX[:,:,channelIdx], mode='gaussian', mean=self.MECTnoise_mu[channelIdx]*0.15, var=(self.MECTnoise_sigma[channelIdx]*0.15*self.MECTnoise_sigma[channelIdx]*0.15))
+                        imX[:,:,channelIdx] = numpy.clip(imX[:,:,channelIdx], rectMin, rectMax)
+                else:
+                    rectMin = numpy.min(imX[:, :, 0])
+                    rectMax = numpy.max(imX[:, :, 0])
+                    imX[:, :, channelIdx] = util.random_noise(imX[:, :, 0], mode='gaussian', mean=self.SECTnoise_mu * 0.15, var=(self.SECTnoise_sigma * 0.15 * self.SECTnoise_sigma * 0.15))
+                    imX[:, :, channelIdx] = numpy.clip(imX[:, :, channelIdx], rectMin, rectMax)
+            if self.useMedian:
+                mSize = self.medianSize[numpy.random.randint(0,len(self.medianSize))]
+                if mSize > 0:
+                    imX = ndimage.median_filter(imX, (mSize, mSize, 1, 1), mode='constant', cval=1.0)
+                    # should the output perhaps always be median-filtered ?
+                    #outImgY = ndimage.median_filter(outImgY, (mSize, mSize, 1), mode='constant', cval=1.0)
+            if self.useGaussian:
+                # here, it's perhaps incorrect to also smoothen the output;
+                # rationale: even an overly smooth image should result is sharp outputs
+                sigma = numpy.random.uniform(low=self.gaussianRange[0], high=self.gaussianRange[1])
+                imX = ndimage.gaussian_filter(imX, (sigma, sigma, 0))
+                #outImgY = ndimage.gaussian_filter(outImgY, (sigma, sigma, 0))
             """
             Store data if requested
             """
-            if self.save_to_dir != None:
-                sXImg = array_to_img(outImgX[:,:,0])
-                #save_img(os.path.join(self.save_to_dir,fname_in+"."+self.save_format),sXimg)
-                sXimg.save(os.path.join(self.save_to_dir,fname_in+"."+self.save_format))
-                sYImg = array_to_img(outImgY[:,:,0])
-                #save_img(os.path.join(self.save_to_dir,fname_out+"."+self.save_format), sYImg)
-                sYimg.save(os.path.join(self.save_to_dir,fname_out+"."+self.save_format))
-            batchX[j] = outImgX
-            batchY[j] = outImgY
+            if (self.save_to_dir is not None) and (self.store_img==True):
+                #print("Range phantom (after scaling): {}; scale: {}; shape {}".format([numpy.min(imX), numpy.max(imX)], [min(minValX), max(maxValX)], imX.shape))
+                #print("Range FBP (after scaling): {}; scale: {}; shape {}".format([numpy.min(imY), numpy.max(imY)], [min(minValY), max(maxValY)], imY.shape))
+                store_imx = imX[:, :, 0, 0]
+                if len(store_imx.shape) < 3:
+                    store_imx = store_imx.reshape(store_imx.shape + (1,))
+                sXImg = array_to_img(store_imx, data_format='channels_last')
+                # save_img(os.path.join(self.save_to_dir,fname_in+"."+self.save_format),sXimg)
+                sXImg.save(os.path.join(self.save_to_dir, fname_in + "_inputX." + self.save_format))
+                store_imy = imY[:, :, 0, 0]
+                if len(store_imy.shape) < 3:
+                    store_imy = store_imy.reshape(store_imy.shape + (1,))
+                sYImg = array_to_img(store_imy, data_format='channels_last')
+                # save_img(os.path.join(self.save_to_dir,fname_out+"."+self.save_format), sYImg)
+                sYImg.save(os.path.join(self.save_to_dir, fname_in + "_outputY." + self.save_format))
+            batchX[j] = imX
+            batchY[j] = imY
+
+        # === Comment Chris: only store images on the first epoch - not on all === #
+        self.store_img = False
         return batchX, batchY
+
+    def on_epoch_end(self):
+        self._epoch_num_ = self._epoch_num_ + 1
+        # print("Epoch: {}, num. CT gens called: {}".format(self._epoch_num_, self.fan_beam_CT.getNumberOfTransformedData()))
