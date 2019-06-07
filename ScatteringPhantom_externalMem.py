@@ -734,13 +734,10 @@ class ScatterPhantomGenerator_inMemory(Sequence):
             self.seeded = True       
         batchX = numpy.zeros((self.batch_size,self.target_size[0], self.target_size[1], self.input_channels, 1),dtype=numpy.float32)
         batchY = numpy.zeros((self.batch_size,self.target_size[0], self.target_size[1], self.output_channels, 1),dtype=numpy.float32)
-#        if self.useZoom:
-#            batchX = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1], self.input_channels),dtype=numpy.float32)
-#            batchY = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1], self.output_channels),dtype=numpy.float32)
+        if self.useZoom:
+            batchX = numpy.zeros((self.batch_size,self.target_size[0], self.target_size[1], self.input_channels, 1),dtype=numpy.float32)
+            batchY = numpy.zeros((self.batch_size,self.target_size[0], self.target_size[1], self.output_channels, 1),dtype=numpy.float32)
             
-        print(itertools.count)
-        
-        
         for j in itertools.islice(itertools.count(),0,self.batch_size):
             imX = None
             minValX = None
