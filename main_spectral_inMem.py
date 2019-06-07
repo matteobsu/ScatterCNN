@@ -175,12 +175,13 @@ if __name__ == '__main__':
                 imY = imY.reshape(imY.shape + (1,))
             if len(imY.shape) < 4:
                 imY = imY.reshape(imY.shape + (1,))
+                
             imX = imX.astype(numpy.float32)
             imY = imY.astype(numpy.float32)
             train_imX_mat[run_index] = imX
             train_imY_mat[run_index] = imY
             # == Note: do data normalization here to reduce memory footprint ==#
-            run_index+=1
+            run_index+=1          
     validate_imX_mat = numpy.zeros((len(fileArray_validate),input_image_size[0],input_image_size[1],output_channels,1))
     validate_imY_mat = numpy.zeros((len(fileArray_validate),input_image_size[0],input_image_size[1],output_channels,1))
     run_index = 0

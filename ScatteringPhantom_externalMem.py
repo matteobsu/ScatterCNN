@@ -677,12 +677,11 @@ class ScatterPhantomGenerator_inMemory(Sequence):
         inImgDims = (self.image_size[0], self.image_size[1], self.input_channels, 1)
         outImgDims = (self.image_size[0], self.image_size[1], self.output_channels, 1)
 
-        #imX = numpy.array(f['Data_X'], order='F').transpose()
-        if len(self.X.shape[0]):
+        if (self.X.shape[0]):
             imX = self.X[0]
             self.x_dtype_in = imX.dtype
             if len(imX.shape) > 3:
-                imX = numpy.squeeze(imX[:, :, 0, :])
+                imX = numpy.squeeze(imX[:, :, :, :])
             if len(imX.shape) < 3:
                 imX = imX.reshape(imX.shape + (1,))
             # === we need to feed the data as 3D+1 channel data stack === #
@@ -693,12 +692,11 @@ class ScatterPhantomGenerator_inMemory(Sequence):
                 print("Error - read data shape ({}) and expected data shape ({}) of X are not equal. EXITING ...".format(imX.shape, inImgDims))
                 exit()
 
-        #numpy.array(f['Data_Y'], order='F').transpose()
-        if len(self.self.Y[0]):
+        if (self.Y.shape[0]):
             imY = self.Y[0]
             self.y_dtype_in = imY.dtype
             if len(imY.shape) > 3:
-                imY = numpy.squeeze(imY[:,:,0,:])
+                imY = numpy.squeeze(imY[:, :, :,:])
             if len(imY.shape) < 3:
                 imY = imY.reshape(imY.shape + (1,))
             # === we need to feed the data as 3D+1 channel data stack === #
@@ -733,13 +731,16 @@ class ScatterPhantomGenerator_inMemory(Sequence):
         self.pid = os.getpid()
         if self.seeded == False:
             numpy.random.seed(self.pid)
-            self.seeded = True
-
-        batchX = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1],self.image_size[2]),dtype=self.dtype)
-        batchY = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1],self.image_size[2]),dtype=self.dtype)
-        if self.useClip or self.useZoom:
-            batchX = numpy.zeros((self.batch_size,self.targetSize[0],self.targetSize[1],self.image_size[2]),dtype=self.dtype)
-            batchY = numpy.zeros((self.batch_size,self.targetSize[0],self.targetSize[1],self.image_size[2]),dtype=self.dtype)
+            self.seeded = True       
+        batchX = numpy.zeros((self.batch_size,self.target_size[0], self.target_size[1], self.input_channels, 1),dtype=numpy.float32)
+        batchY = numpy.zeros((self.batch_size,self.target_size[0], self.target_size[1], self.output_channels, 1),dtype=numpy.float32)
+#        if self.useZoom:
+#            batchX = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1], self.input_channels),dtype=numpy.float32)
+#            batchY = numpy.zeros((self.batch_size,self.image_size[0],self.image_size[1], self.output_channels),dtype=numpy.float32)
+            
+        print(itertools.count)
+        
+        
         for j in itertools.islice(itertools.count(),0,self.batch_size):
             imX = None
             minValX = None
