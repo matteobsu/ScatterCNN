@@ -132,8 +132,8 @@ if __name__ == '__main__':
     fileArray_validate.sort(key=tokenize)
     nImages_validate = len(fileArray_validate)
 
-    train_imX_mat = numpy.zeros((len(fileArray_train),input_image_size[0],input_image_size[1],output_channels))
-    train_imY_mat = numpy.zeros((len(fileArray_train),input_image_size[0],input_image_size[1],output_channels))
+    train_imX_mat = numpy.zeros((len(fileArray_train),input_image_size[0],input_image_size[1],output_channels,1))
+    train_imY_mat = numpy.zeros((len(fileArray_train),input_image_size[0],input_image_size[1],output_channels,1))
     run_index = 0
     for index in itertools.islice(itertools.count(), 0, len(fileArray_train)):
         inName = fileArray_train[index]
@@ -181,8 +181,8 @@ if __name__ == '__main__':
             train_imY_mat[run_index] = imY
             # == Note: do data normalization here to reduce memory footprint ==#
             run_index+=1
-    validate_imX_mat = numpy.zeros((len(fileArray_validate),input_image_size[0],input_image_size[1],output_channels))
-    validate_imY_mat = numpy.zeros((len(fileArray_validate),input_image_size[0],input_image_size[1],output_channels))
+    validate_imX_mat = numpy.zeros((len(fileArray_validate),input_image_size[0],input_image_size[1],output_channels,1))
+    validate_imY_mat = numpy.zeros((len(fileArray_validate),input_image_size[0],input_image_size[1],output_channels,1))
     run_index = 0
     for index in itertools.islice(itertools.count(), 0, len(fileArray_validate)):
         inName = fileArray_validate[index]
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     #     easily to children processes.
     # fits the model on batches with real-time data augmentation:
     model_fitting_history = model.fit_generator(datagen,
-                                                steps_per_epoch=int(epoch_steps/batchSize),
+                                                steps_per_epoch=int(datagen.numImages/batchSize),
 #                                                steps_per_epoch=int(datagen.numImages/batchSize),
 #                                                validation_steps=int(validgen.numImages/batchSize),
                                                 validation_data=validgen,
