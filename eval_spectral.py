@@ -164,7 +164,7 @@ if __name__ == '__main__':
     if len(dumpData_in.shape) < 4:
         dumpData_in = dumpData_in.reshape(dumpData_in.shape + (1,))
     channelNum_in = dumpData_in.shape[2]
-    print("input shape: {}".format(dumpData_in.shape))
+#    print("input shape: {}".format(dumpData_in.shape))
     itype = dumpData_in.dtype
     sqShape_in = numpy.squeeze(dumpData_in).shape
     shape_in = dumpData_in.shape
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     if len(dumpData_out.shape) < 4:
         dumpData_out = dumpData_out.reshape(dumpData_out.shape + (1,))
     channelNum_out = dumpData_out.shape[2]
-    print("scatter shape: {}".format(dumpData_in.shape))
+#    print("scatter shape: {}".format(dumpData_in.shape))
     otype = dumpData_out.dtype
     sqShape_out = numpy.squeeze(dumpData_out).shape
     shape_out = dumpData_out.shape

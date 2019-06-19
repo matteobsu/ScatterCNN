@@ -341,7 +341,7 @@ if __name__ == '__main__':
                                                 validation_steps=min([int(validgen.numImages/batchSize), int(128/batchSize)]),
                                                 epochs=epochs,
                                                 use_multiprocessing=True,
-                                                workers=12,
+                                                workers=8,
                                                 callbacks=callbacks)
 
     with open(mhistfile.format(epoch=epochs), 'wb') as file:
