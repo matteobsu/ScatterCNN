@@ -273,6 +273,14 @@ if __name__ == '__main__':
                   optimizer=opt,
                   metrics=['mse'])  # Mean Absolute Error metrics
 
+    #-----------------------------------------------------------------#
+    #---- activate this function and comment out the model lines  ----#
+    #---- above to activate logarithmic learning error rate.      ----#
+    #-----------------------------------------------------------------#
+    #model.compile(loss='mean_squared_logarithmic_error', # cost function
+    #              optimizer=opt,
+    #              metrics=['mae','mse'])  # Mean Absolute Error & Mean Squared Error metrics
+
     """
     Data augmentation setup
     """    

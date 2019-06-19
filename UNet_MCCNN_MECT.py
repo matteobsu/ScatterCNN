@@ -92,18 +92,24 @@ class UNetFactory(object):
         #dp1D_l3_3 = Dropout(self.dropout)(conv1D_l3_2)
         ups1D_l3_4 = UpSampling1D(size=4)(conv1D_l3_2)
         # == Layer 2 - up == #
-        conv1D_l2s_1 = Conv1D(32, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups1D_l3_4)
+        #conv1D_l2s_1 = Conv1D(32, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups1D_l3_4)
+        conv1D_l2s_1 = SeparableConv1D(32, self.conv_k_1D, depth_multiplier=1, activation=self.activ_func, padding="same",
+                              activity_regularizer=self.reg)(ups1D_l3_4)
         concat1D_l2s_2 = Concatenate(axis=2)([conv1D_l2d_2, conv1D_l2s_1])
         conv1D_l2s_3 = Conv1D(32, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat1D_l2s_2)
         conv1D_l2s_4 = Conv1D(32, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv1D_l2s_3)
         ups1D_l3_5 = UpSampling1D(size=2)(conv1D_l2s_4)
         # == Layer 1 - up == #
-        conv1D_l1s_1 = Conv1D(16, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups1D_l3_5)
+        #conv1D_l1s_1 = Conv1D(16, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups1D_l3_5)
+        conv1D_l1s_1 = SeparableConv1D(16, self.conv_k_1D, depth_multiplier=1, activation=self.activ_func, padding="same",
+                              activity_regularizer=self.reg)(ups1D_l3_5)
         concat1D_l1s_2 = Concatenate(axis=2)([conv1D_l1d_2, conv1D_l1s_1])
         conv1D_l1s_3 = Conv1D(16, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat1D_l1s_2)
         conv1D_l1s_4 = Conv1D(16, self.conv_k_1D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv1D_l1s_3)
         # == Output layer == #
-        conv1D_out_1 = Conv1D(self.input_shape[2]*self.input_shape[3], (1,), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv1D_l1s_4)
+        #conv1D_out_1 = Conv1D(self.input_shape[2]*self.input_shape[3], (1,), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv1D_l1s_4)
+        conv1D_out_1 = SeparableConv1D(self.input_shape[2] * self.input_shape[3], (1,), depth_multiplier=1, activation=self.activ_func,
+                              padding="same", activity_regularizer=self.reg)(conv1D_l1s_4)
         conv1D_out_reshape = Reshape(self.input_shape)(conv1D_out_1)
         return conv1D_out_reshape
 
@@ -155,24 +161,32 @@ class UNetFactory(object):
         #ups2D_l4s_5 = UpSampling2D()(conv2D_l4s_4)
 
         # == Layer 3 - up == #
-        conv2D_l3s_1 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l5_4)
+        #conv2D_l3s_1 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l5_4)
+        conv2D_l3s_1 = SeparableConv2D(48, self.conv_k_2D, depth_multiplier=1, activation=self.activ_func, padding="same",
+                              activity_regularizer=self.reg)(ups2D_l5_4)
         concat2D_l3s_2 = Concatenate(axis=3)([dp2D_l3d_3, conv2D_l3s_1])
         conv2D_l3s_3 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l3s_2)
         conv2D_l3s_4 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l3s_3)
         ups2D_l3s_5 = UpSampling2D()(conv2D_l3s_4)
         # == Layer 2 - up == #
-        conv2D_l2s_1 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l3s_5)
+        #conv2D_l2s_1 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l3s_5)
+        conv2D_l2s_1 = SeparableConv2D(32, self.conv_k_2D, depth_multiplier=1, activation=self.activ_func, padding="same",
+                              activity_regularizer=self.reg)(ups2D_l3s_5)
         concat2D_l2s_2 = Concatenate(axis=3)([dp2D_l2d_3, conv2D_l2s_1])
         conv2D_l2s_3 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l2s_2)
         conv2D_l2s_4 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l2s_3)
         ups2D_l2s_5 = UpSampling2D()(conv2D_l2s_4)
         # == Layer 1 - up == #
-        conv2D_l1s_1 = Conv2D(16, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l2s_5)
+        #conv2D_l1s_1 = Conv2D(16, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l2s_5)
+        conv2D_l1s_1 = SeparableConv2D(16, self.conv_k_2D, depth_multiplier=1, activation=self.activ_func, padding="same",
+                              activity_regularizer=self.reg)(ups2D_l2s_5)
         concat2D_l1s_2 = Concatenate(axis=3)([dp2D_l1d_3, conv2D_l1s_1])
         conv2D_l1s_3 = Conv2D(16, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l1s_2)
         conv2D_l1s_4 = Conv2D(16, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l1s_3)
         # == Output layer == #
-        conv2D_out_1 = Conv2D(self.input_shape[2]*self.input_shape[3], (1,1), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l1s_4)
+        #conv2D_out_1 = Conv2D(self.input_shape[2]*self.input_shape[3], (1,1), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l1s_4)
+        conv2D_out_1 = SeparableConv2D(self.input_shape[2] * self.input_shape[3], (1, 1), depth_multiplier=1, activation=self.activ_func,
+                              padding="same", activity_regularizer=self.reg)(conv2D_l1s_4)
         conv2D_out_reshape = Reshape(self.input_shape)(conv2D_out_1)
         return conv2D_out_reshape
 
