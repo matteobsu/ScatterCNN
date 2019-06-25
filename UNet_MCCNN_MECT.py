@@ -39,7 +39,8 @@ class UNetFactory(object):
         print("Create input layer with shape {} (expected: {})".format(self.input.shape, self.input_shape))
         net1D = self.build_1Dnetwork(self.input)
         print("Create 1D network with shape {}".format(net1D.shape))
-        net2D = self.build_2Dnetwork(self.input)
+        #net2D = self.build_2Dnetwork(self.input)
+        net2D = self.build_2Dnetwork_xtreme(self.input)
         print("Create 2D network with shape {}".format(net2D.shape))
         net3D = self.build_3Dnetwork(self.input)
         print("Create 3D network with shape {}".format(net3D.shape))
@@ -109,6 +110,75 @@ class UNetFactory(object):
         conv1D_out_1 = SeparableConv1D(self.input_shape[2] * self.input_shape[3], (1,), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv1D_l1s_4)
         conv1D_out_reshape = Reshape(self.input_shape)(conv1D_out_1)
         return conv1D_out_reshape
+
+    def build_2Dnetwork_xtreme(self, input_data):
+        # == Input reshape == #
+        shape_conv2D = (self.input_shape[0], self.input_shape[1], self.input_shape[2]*self.input_shape[3])
+        conv2D_in_reshape = Reshape(shape_conv2D)(input_data)
+        # == Layer 1 - down == #
+        #conv2D_l1d_1 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, input_shape=shape_conv2D, data_format="channels_last", padding="same", activity_regularizer=self.reg)(conv2D_in_reshape)
+        conv2D_l1d_1 = SeparableConv2D(32, (2,2), depth_multiplier=1, activation=self.activ_func, input_shape=shape_conv2D, data_format="channels_last", padding="same", activity_regularizer=self.reg)(conv2D_in_reshape)
+        conv2D_l1d_2 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l1d_1)
+        # == dp2D_l1d_3 = Dropout(self.dropout)(conv2D_l1d_2) == #
+        mxp2D_l1d_4 = MaxPooling2D(pool_size=(3,3))(conv2D_l1d_2)
+        # == Layer 2 - down == #
+        conv2D_l2d_1 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp2D_l1d_4)
+        #conv2D_l2d_1 = SeparableConv2D(48, (2,2), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp2D_l1d_4)
+        conv2D_l2d_2 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l2d_1)
+        # == dp2D_l2d_3 = Dropout(self.dropout)(conv2D_l2d_2) == #
+        mxp2D_l2d_4 = MaxPooling2D(pool_size=(4,4))(conv2D_l2d_2)
+        # == Layer 3 - down == #
+        conv2D_l3d_1 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp2D_l2d_4)
+        #conv2D_l3d_1 = SeparableConv2D(64, (2,2), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp2D_l2d_4)
+        conv2D_l3d_2 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l3d_1)
+        dp2D_l3d_3 = Dropout(self.dropout)(conv2D_l3d_2)
+        mxp2D_l3d_4 = MaxPooling2D(pool_size=(4,4))(dp2D_l3d_3)
+
+        ## == Layer 4 - down == #
+        conv2D_l4d_1 = Conv2D(128, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp2D_l3d_4)
+        conv2D_l4d_2 = Conv2D(128, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l4d_1)
+        dp2D_l4d_3 = Dropout(self.dropout)(conv2D_l4d_2)
+        mxp2D_l4d_4 = MaxPooling2D(pool_size=(2,2))(dp2D_l4d_3)
+
+        # == Layer 5 - bottom == #
+        conv2D_l5_1 = Conv2D(256, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp2D_l4d_4)
+        #conv2D_l5_1 = SeparableConv2D(256, (2,2), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp2D_l4d_4)
+        conv2D_l5_2 = Conv2D(256, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l5_1)
+        dp2D_l5_3 = Dropout(self.dropout)(conv2D_l5_2)
+        ups2D_l5_4 = UpSampling2D(size=(2,2))(dp2D_l5_3)
+
+        # == Layer 4 - up == #
+        #conv2D_l4s_1 = Conv2D(128, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l5_4)
+        concat2D_l4s_2 = Concatenate(axis=3)([dp2D_l4d_3, ups2D_l5_4])
+        conv2D_l4s_3 = Conv2D(128, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l4s_2)
+        conv2D_l4s_4 = Conv2D(128, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l4s_3)
+        ups2D_l4s_5 = UpSampling2D(size=(4,4))(conv2D_l4s_4)
+
+        # == Layer 3 - up == #
+        #conv2D_l3s_1 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l5_4)
+        #conv2D_l3s_1 = SeparableConv2D(64, (2,2), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l5_4)
+        concat2D_l3s_2 = Concatenate(axis=3)([dp2D_l3d_3, ups2D_l5_4])
+        conv2D_l3s_3 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l3s_2)
+        conv2D_l3s_4 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l3s_3)
+        ups2D_l3s_5 = UpSampling2D(size=(4,4))(conv2D_l3s_4)
+        # == Layer 2 - up == #
+        #conv2D_l2s_1 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l3s_5)
+        #conv2D_l2s_1 = SeparableConv2D(48, (2,2), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l3s_5)
+        concat2D_l2s_2 = Concatenate(axis=3)([conv2D_l2d_2, ups2D_l3s_5])
+        conv2D_l2s_3 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l2s_2)
+        conv2D_l2s_4 = Conv2D(48, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l2s_3)
+        ups2D_l2s_5 = UpSampling2D(size=(3,3))(conv2D_l2s_4)
+        # == Layer 1 - up == #
+        #conv2D_l1s_1 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l2s_5)
+        #conv2D_l1s_1 = SeparableConv2D(32, (2,2), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l2s_5)
+        concat2D_l1s_2 = Concatenate(axis=3)([conv2D_l1d_2, ups2D_l2s_5])
+        conv2D_l1s_3 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l1s_2)
+        conv2D_l1s_4 = Conv2D(32, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l1s_3)
+        # == Output layer == #
+        #conv2D_out_1 = Conv2D(self.input_shape[2]*self.input_shape[3], (1,1), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l1s_4)
+        conv2D_out_1 = SeparableConv2D(self.input_shape[2] * self.input_shape[3], (1, 1), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l1s_4)
+        conv2D_out_reshape = Reshape(self.input_shape)(conv2D_out_1)
+        return conv2D_out_reshape
 
     def build_2Dnetwork(self, input_data):
         # == Input reshape == #
