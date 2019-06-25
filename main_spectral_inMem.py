@@ -38,15 +38,15 @@ General parameters for learning
 """
 input_indicator = "*X*"
 output_indicator = "*Y*"
-epochs = 20
+epochs = 50
 keep_period = 5
-input_image_size = (128,128)       # needs to fit with the actual data dim
+input_image_size = (256,256)       # needs to fit with the actual data dim
 target_image_size = (96,96)  # free to choose for resizing
-input_image_shape = (128,128,32,1)
-target_image_shape = (96,96,32,1)
+input_image_shape = (256,256,8,1)
+target_image_shape = (96,96,8,1)
 epoch_steps = 402
-input_channels = 32
-output_channels = 32
+input_channels = 8
+output_channels = 8
 batchSize=8
 
 if __name__ == '__main__':
@@ -269,17 +269,18 @@ if __name__ == '__main__':
     #                               decay=1e-6)  # lr decay over each update.
     
     opt = keras.optimizers.Adam(lr=0.0001, decay=3.0e-07, amsgrad=True)
-    model.compile(loss='mean_absolute_error',  # standard cost function
-                  optimizer=opt,
-                  metrics=['mse'])  # Mean Absolute Error metrics
+    
+#    model.compile(loss='mean_absolute_error',  # standard cost function
+#                  optimizer=opt,
+#                  metrics=['mse'])  # Mean Absolute Error metrics
 
     #-----------------------------------------------------------------#
     #---- activate this function and comment out the model lines  ----#
     #---- above to activate logarithmic learning error rate.      ----#
     #-----------------------------------------------------------------#
-    #model.compile(loss='mean_squared_logarithmic_error', # cost function
-    #              optimizer=opt,
-    #              metrics=['mae','mse'])  # Mean Absolute Error & Mean Squared Error metrics
+    model.compile(loss='mean_squared_logarithmic_error', # cost function
+                  optimizer=opt,
+                  metrics=['mae','mse'])  # Mean Absolute Error & Mean Squared Error metrics
 
     """
     Data augmentation setup
