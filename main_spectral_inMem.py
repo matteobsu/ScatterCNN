@@ -40,14 +40,14 @@ input_indicator = "*X*"
 output_indicator = "*Y*"
 epochs = 50
 keep_period = 5
-input_image_size = (256,256)       # needs to fit with the actual data dim
+input_image_size = (128,128)       # needs to fit with the actual data dim
 target_image_size = (96,96)  # free to choose for resizing
-input_image_shape = (256,256,8,1)
-target_image_shape = (96,96,8,1)
+input_image_shape = (128,128,32,1)
+target_image_shape = (96,96,32,1)
 epoch_steps = 402
-input_channels = 8
-output_channels = 8
-batchSize=8
+input_channels = 32
+output_channels = 32
+batchSize=32
 
 if __name__ == '__main__':
     description = ("Creating model (modified U-Net) and training routine for CT " +

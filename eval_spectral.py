@@ -26,21 +26,6 @@ def normaliseFieldArray(a, numChannels, minx=None, maxx=None):
     a = numpy.squeeze(a)
     outShape = a.shape
     outDimLen = len(outShape)
-    #----------------------#
-    #Cap to Ti Attenuation #
-    #----------------------#
-    mu_Ti = ([23.7942, 6.7035, 3.1118, 1.8092, 1.2668, 0.9963, 0.8428, 0.7473])
-    if outDimLen < 4:
-        for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
-            aa=a[:, :, channelIdx]
-            aa[aa>mu_Ti[channelIdx]] = mu_Ti[channelIdx]
-            a[:, :, channelIdx] = aa
-    else:
-        for channelIdx in itertools.islice(itertools.count(), 0, numChannels):                
-            aa=a[:, :, :, channelIdx]
-            aa[aa>mu_Ti[channelIdx]] = mu_Ti[channelIdx]
-            a[:, :, :, channelIdx] = aa       
-    #----------------------#    
     if numChannels<=1:
         if minx is None:
             minx = numpy.min(a)
@@ -99,8 +84,8 @@ def denormaliseFieldArray(a, numChannels, minx=None, maxx=None):
     return a
 
 slice_size = (96,96)
-input_channels = 8
-target_channels = 8
+input_channels = 32
+target_channels = 32
 useNormData=False
 
 if __name__ == '__main__':
