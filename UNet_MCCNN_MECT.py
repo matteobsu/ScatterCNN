@@ -157,7 +157,7 @@ class UNetFactory(object):
         # == Layer 3 - up == #
         #conv2D_l3s_1 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l5_4)
         #conv2D_l3s_1 = SeparableConv2D(64, (2,2), depth_multiplier=1, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(ups2D_l5_4)
-        concat2D_l3s_2 = Concatenate(axis=3)([dp2D_l3d_3, ups2D_l5_4])
+        concat2D_l3s_2 = Concatenate(axis=3)([dp2D_l3d_3, ups2D_l4s_5])
         conv2D_l3s_3 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(concat2D_l3s_2)
         conv2D_l3s_4 = Conv2D(64, self.conv_k_2D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv2D_l3s_3)
         ups2D_l3s_5 = UpSampling2D(size=(4,4))(conv2D_l3s_4)
