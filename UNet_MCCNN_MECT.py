@@ -36,25 +36,28 @@ class UNetFactory(object):
         self.input = Input(shape=self.input_shape)
 
     def buildNetwork(self):
-        print("Create input layer with shape {} (expected: {})".format(self.input.shape, self.input_shape))
-        net1D = self.build_1Dnetwork(self.input)
-        print("Create 1D network with shape {}".format(net1D.shape))
+        # print("Create input layer with shape {} (expected: {})".format(self.input.shape, self.input_shape))
+        # net1D = self.build_1Dnetwork(self.input)
+        # print("Create 1D network with shape {}".format(net1D.shape))
         #net2D = self.build_2Dnetwork(self.input)
-        net2D = self.build_2Dnetwork_xtreme(self.input)
-        print("Create 2D network with shape {}".format(net2D.shape))
+        # net2D = self.build_2Dnetwork_xtreme(self.input)
+        # print("Create 2D network with shape {}".format(net2D.shape))
         net3D = self.build_3Dnetwork(self.input)
         print("Create 3D network with shape {}".format(net3D.shape))
-        fuseNets = concatenate([net1D, net2D, net3D])
-        print("Create fused network with shape {}".format(fuseNets.shape))
+        # fuseNets = concatenate([net1D, net2D, net3D])
+        # print("Create fused network with shape {}".format(fuseNets.shape))
+        
         #conv3D_fuse_1 = Conv3D(8, self.conv_k_3D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(fuseNets)
         #print("Create fused-conv 1 network with shape {}".format(conv3D_fuse_1.shape))
         #conv3D_fuse_2 = Conv3D(8, self.conv_k_3D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv3D_fuse_1)
         #print("Create fused-conv 2 network with shape {}".format(conv3D_fuse_2.shape))
-        conv3D_out = Conv3D(1, (1,1,1), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(fuseNets)
-        print("Create output conv network with shape {}".format(conv3D_out.shape))
+        
+        # conv3D_out = Conv3D(1, (1,1,1), activation=self.activ_func, padding="same", activity_regularizer=self.reg)(fuseNets)
+        # print("Create output conv network with shape {}".format(conv3D_out.shape))
+        
         #self.output = Add()([self.input, conv3D_out])
 #        self.output = conv3D_out
-        self.output = net2D
+        self.output = net3D
         
         #fuseNets = concatenate([net1D, net2D, net3D], axis=-2)
         #print("Create fused network with shape {}".format(fuseNets.shape))
@@ -262,7 +265,7 @@ class UNetFactory(object):
         conv3D_l2d_1 = Conv3D(8, self.conv_k_3D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp3D_l1d_4)
         conv3D_l2d_2 = Conv3D(8, self.conv_k_3D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv3D_l2d_1)
         dp3D_l2d_3 = Dropout(self.dropout)(conv3D_l2d_2)
-        mxp3D_l2d_4 = MaxPooling3D(pool_size=(2, 2, 2))(dp3D_l2d_3)
+        mxp3D_l2d_4 = MaxPooling3D(pool_size=(2,2,2))(dp3D_l2d_3)
         # == Layer 3 - bottom == #
         conv3D_l3_1 = Conv3D(16, self.conv_k_3D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(mxp3D_l2d_4)
         conv3D_l3_2 = Conv3D(16, self.conv_k_3D, activation=self.activ_func, padding="same", activity_regularizer=self.reg)(conv3D_l3_1)

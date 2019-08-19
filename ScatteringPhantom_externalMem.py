@@ -16,7 +16,7 @@ import re
 import h5py
 
 
-WORKERS = 12
+WORKERS = 8
 CACHE_SIZE = 32
 
 def clipped_zoom(img, zoom_factor, **kwargs):
@@ -159,8 +159,63 @@ def denormaliseFieldArray(a, numChannels, minx=None, maxx=None):
         a = a.reshape(inShape)
     return a
 
+def notnormaliseFieldArray(a, numChannels, minx=None, maxx=None):
+    inShape = a.shape
+    inDimLen = len(inShape)
+    a = numpy.squeeze(a)
+    outShape = a.shape
+    outDimLen = len(outShape)
+    if numChannels<=1:
+        if minx is None:
+            minx = numpy.min(a)
+        if maxx is None:
+            maxx = numpy.max(a)
+        a = a
+    else:
+        if minx is None:
+            minx = []
+        if maxx is None:
+            maxx = []
+        if outDimLen < 4:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                if len(minx) < numChannels:
+                    minx.append(numpy.min(a[:, :, channelIdx]))
+                if len(maxx) < numChannels:
+                    maxx.append(numpy.max(a[:, :, channelIdx]))
+                if numpy.fabs(maxx[channelIdx] - minx[channelIdx]) > 0:
+                    a=a
+        else:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                if len(minx) < numChannels:
+                    minx.append(numpy.min(a[:, :, :, channelIdx]))
+                if len(maxx) < numChannels:
+                    maxx.append(numpy.max(a[:, :, :, channelIdx]))
+                if numpy.fabs(maxx[channelIdx] - minx[channelIdx]) > 0:
+                    a=a
+    #print(("{} in vs {} out vs {} a-shape".format(inShape,outShape, a.shape)))
+    if outDimLen<inDimLen:
+        a = a.reshape(inShape)
+    return minx, maxx, a
 
-
+def notdenormaliseFieldArray(a, numChannels, minx=None, maxx=None):
+    inShape = a.shape
+    inDimLen = len(inShape)
+    a = numpy.squeeze(a)
+    outShape = a.shape
+    outDimLen = len(outShape)
+    if numChannels <= 1:
+        a=a
+    else:
+        if outDimLen < 4:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                a=a
+        else:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                a=a
+    if outDimLen<inDimLen:
+        a = a.reshape(inShape)
+    return a
+    
 def clipNormFieldArray(a, numChannels):
     inShape = a.shape
     inDimLen = len(inShape)
@@ -389,12 +444,20 @@ class ScatterPhantomGenerator(Sequence):
                 maxValX = None
                 minValY = None
                 maxValY = None
+                # minValX = numpy.zeros((32))
+                # maxValX = numpy.ones((32))
+                # minValY = numpy.zeros((32))
+                # maxValY = numpy.ones((32))                
                 if self.useNormData:
                     """
                     Data Normalisation
                     """
-                    minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
-                    minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels, minx=minValX, maxx=maxValX)
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels)
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels, minx=minValY, maxx=maxValY)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValX, maxValX, imX = notnormaliseFieldArray(imX, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValY, maxValY, imY = notnormaliseFieldArray(imY, self.output_channels, minx=minValY, maxx=maxValY)                    
 
                 for index in itertools.islice(itertools.count(), 0, len(indices)):
                     slice_index = slice_indices[index]
@@ -436,9 +499,20 @@ class ScatterPhantomGenerator(Sequence):
                 maxValX = None
                 minValY = None
                 maxValY = None
+                # minValX = numpy.zeros((32))
+                # maxValX = numpy.ones((32))
+                # minValY = numpy.zeros((32))
+                # maxValY = numpy.ones((32))                
                 if self.useNormData:
-                    minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
-                    minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels, minx=minValX, maxx=maxValX)
+                    """
+                    Data Normalisation
+                    """
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels)
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels, minx=minValY, maxx=maxValY)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValX, maxValX, imX = notnormaliseFieldArray(imX, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValY, maxValY, imY = notnormaliseFieldArray(imY, self.output_channels, minx=minValY, maxx=maxValY)  
                 imX = imX.astype(numpy.float32)
                 imY = imY.astype(numpy.float32)
                 with self._lock_:
@@ -479,9 +553,13 @@ class ScatterPhantomGenerator(Sequence):
         idxArray = numpy.random.randint(0, self.cache.get_cache_size(), self.batch_size)
         for j in itertools.islice(itertools.count(),0,self.batch_size):
             imX = None
+            # minValX = numpy.zeros((32))
+            # maxValX = numpy.ones((32))
             minValX = None
             maxValX = None
             imY = None
+            # minValY = numpy.zeros((32))
+            # maxValY = numpy.ones((32))
             minValY = None
             maxValY = None
             if self.useCache:
@@ -519,9 +597,17 @@ class ScatterPhantomGenerator(Sequence):
                 """
                 Data Normalisation
                 """
+          
                 if self.useNormData:
-                    minValX,maxValX,imX = normaliseFieldArray(imX, self.input_channels)
-                    minValY,minValY,imY = normaliseFieldArray(imY, self.output_channels, minx=minValX, maxx=maxValX)
+                    """
+                    Data Normalisation
+                    """
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels)
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels, minx=minValY, maxx=maxValY)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValX, maxValX, imX = notnormaliseFieldArray(imX, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValY, maxValY, imY = notnormaliseFieldArray(imY, self.output_channels, minx=minValY, maxx=maxValY)  
                 imX = imX.astype(numpy.float32)
                 imY = imY.astype(numpy.float32)
 
@@ -740,9 +826,13 @@ class ScatterPhantomGenerator_inMemory(Sequence):
             
         for j in itertools.islice(itertools.count(),0,self.batch_size):
             imX = None
+            # minValX = numpy.zeros((32))
+            # maxValX = numpy.ones((32))
             minValX = None
             maxValX = None
             imY = None
+            # minValY = numpy.zeros((32))
+            # maxValY = numpy.ones((32))
             minValY = None
             maxValY = None
             imgIndex = ((idx*self.batch_size)+j) % (self.numImages-1)
@@ -770,8 +860,12 @@ class ScatterPhantomGenerator_inMemory(Sequence):
             Data Normalisation
             """
             if self.useNormData:
-                minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
-                minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels, minx=minValX, maxx=maxValX)
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.output_channels)
+                    # minValX, maxValX, imX = normaliseFieldArray(imX, self.input_channels, minx=minValY, maxx=maxValY)
+                    # minValY, maxValY, imY = normaliseFieldArray(imY, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValX, maxValX, imX = notnormaliseFieldArray(imX, self.input_channels, minx=minValX, maxx=maxValX)
+                    minValY, maxValY, imY = notnormaliseFieldArray(imY, self.output_channels, minx=minValY, maxx=maxValY)                    
             imX = imX.astype(numpy.float32)
             imY = imY.astype(numpy.float32)
             if imX.shape != imY.shape:

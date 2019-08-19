@@ -38,7 +38,7 @@ General parameters for learning
 """
 input_indicator = "*X*"
 output_indicator = "*Y*"
-epochs = 50
+epochs = 250
 keep_period = 5
 input_image_size = (128,128)       # needs to fit with the actual data dim
 target_image_size = (96,96)  # free to choose for resizing

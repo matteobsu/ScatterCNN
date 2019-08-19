@@ -1,49 +1,8 @@
 activate neuralnets
 cd C:\Users\mbusi\Documents\scnns-master\src\
 
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190618_TtTs_2Dnetfix2\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTs\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTs\validation\
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190620_TtTs_13Dnet\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTs\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTs\validation\
+python main_spectral_inMem.py -r D:\mbusi\SCNN\20190813_muTmuP_3d_env\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\muTmuP_env\train\ -V D:\mbusi\SCNN\final_data_32ch\muTmuP_env\validation\
 
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTs_noenv\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTs_noenv\validation\
+python eval_spectral.py -m D:\mbusi\SCNN\20190813_muTmuP_3d_env\ -D D:\mbusi\SCNN\final_data_32ch\muTmuP_env\test\ -O D:\mbusi\SCNN\20190813_muTmuP_3d_env\results_1\ -M pack10250 -H D:\mbusi\SCNN\20190813_muTmuP_3d_env\output\pack10250_Thist.pkl
 
-python main_spectral.py -r D:\mbusi\SCNN\20190617_TtTp\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp\validation\
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190621_TtTsnoenv_fuse\ -D D:\mbusi\SCNN\final_data_32ch\TtTs_noenv\test\ -O D:\mbusi\SCNN\20190621_TtTsnoenv_fuse\results_1\ -M pack10040 -H D:\mbusi\SCNN\20190621_TtTsnoenv_fuse\output\pack10040_Thist.pkl
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190621_TtTsnoenv_fuse\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\Tt\ -O D:\mbusi\SCNN\20190621_TtTsnoenv_fuse\results_plastics\ -M pack10040 -H D:\mbusi\SCNN\20190621_TtTsnoenv_fuse\output\pack10040_Thist.pkl
-
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTs_noenv\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTs_noenv\validation\
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\ -D D:\mbusi\SCNN\final_data_32ch\TtTs_noenv\test\ -O D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\results_1\ -M pack10010 -H D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\output\pack10010_Thist.pkl
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\Tt\ -O D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\results_plastics\ -M pack10010 -H D:\mbusi\SCNN\20190623_TtTsnoenv_2dnet\output\pack10010_Thist.pkl
-
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190624_TtTpNE_3d\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\validation\
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_3d\ -D D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\test\ -O D:\mbusi\SCNN\20190624_TtTpNE_3d\results_1\ -M pack10010 -H D:\mbusi\SCNN\20190624_TtTpNE_3d\output\pack10010_Thist.pkl
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_3d\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\Tt\ -O D:\mbusi\SCNN\20190624_TtTpNE_3d\results_plastics\ -M pack10010 -H D:\mbusi\SCNN\20190624_TtTpNE_3d\output\pack10010_Thist.pkl
-
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190624_TtTpNE_3dflip\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\validation\ --augment
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_3dflip\ -D D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\test\ -O D:\mbusi\SCNN\20190624_TtTpNE_3dflip\results_1\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTpNE_3dflip\output\pack10050_Thist.pkl
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_3dflip\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\Tt\ -O D:\mbusi\SCNN\20190624_TtTpNE_3dflip\results_plastics\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTpNE_3dflip\output\pack10050_Thist.pkl
-
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190624_TtTpNE_3dflip\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\validation\ --augment
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_3dflip\ -D D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\test\ -O D:\mbusi\SCNN\20190624_TtTpNE_3dflip\results_1\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTpNE_3dflip\output\pack10050_Thist.pkl
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_3dflip\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\Tt\ -O D:\mbusi\SCNN\20190624_TtTpNE_3dflip\results_plastics\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTpNE_3dflip\output\pack10050_Thist.pkl
-
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190624_TtTpNE_1dflip\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\validation\ --augment
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_1dflip\ -D D:\mbusi\SCNN\final_data_32ch\TtTp_noenv\test\ -O D:\mbusi\SCNN\20190624_TtTpNE_1dflip\results_1\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTpNE_1dflip\output\pack10050_Thist.pkl
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTpNE_1dflip\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\Tt\ -O D:\mbusi\SCNN\20190624_TtTpNE_1dflip\results_plastics\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTpNE_1dflip\output\pack10050_Thist.pkl
-
-python main_spectral_inMem.py -r D:\mbusi\SCNN\20190624_TtTp_fuse\ -m pack1{epoch:04d} -T D:\mbusi\SCNN\final_data_32ch\TtTp\train\ -V D:\mbusi\SCNN\final_data_32ch\TtTp\validation\ --augment
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTp_fuse\ -D D:\mbusi\SCNN\final_data_32ch\TtTp\test\ -O D:\mbusi\SCNN\20190624_TtTp_fuse\results_1\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTp_fuse\output\pack10050_Thist.pkl
-
-python eval_spectral.py -m D:\mbusi\SCNN\20190624_TtTp_fuse\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\Tt\ -O D:\mbusi\SCNN\20190624_TtTp_fuse\results_plastics\ -M pack10050 -H D:\mbusi\SCNN\20190624_TtTp_fuse\output\pack10050_Thist.pkl
+python eval_spectral.py -m D:\mbusi\SCNN\20190813_muTmuP_3d_env\ -D D:\mbusi\SCNN\final_data_32ch\190613_PlasticsConeBeam\muT_clean\ -O D:\mbusi\SCNN\20190813_muTmuP_3d_env\results_plastics\ -M pack10250 -H D:\mbusi\SCNN\20190813_muTmuP_3d_env\output\pack10250_Thist.pkl

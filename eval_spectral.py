@@ -45,20 +45,14 @@ def normaliseFieldArray(a, numChannels, minx=None, maxx=None):
                     maxx.append(numpy.max(a[:, :, channelIdx]))
                 if numpy.fabs(maxx[channelIdx] - minx[channelIdx]) > 0:
                     a[:, :, channelIdx] = (a[:, :, channelIdx] - minx[channelIdx]) / (maxx[channelIdx] - minx[channelIdx])
-                aa = a[:, :, channelIdx]
-                aa[aa>1]=1
-                a[:, :, channelIdx]=aa
         else:
-            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):                
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
                 if len(minx) < numChannels:
                     minx.append(numpy.min(a[:, :, :, channelIdx]))
                 if len(maxx) < numChannels:
                     maxx.append(numpy.max(a[:, :, :, channelIdx]))
                 if numpy.fabs(maxx[channelIdx] - minx[channelIdx]) > 0:
                     a[:, :, :, channelIdx] = (a[:, :, :, channelIdx] - minx[channelIdx]) / (maxx[channelIdx] - minx[channelIdx])
-                aa = a[:, :, :, channelIdx]
-                aa[aa>1]=1
-                a[:, :, :, channelIdx]=aa       
     #print(("{} in vs {} out vs {} a-shape".format(inShape,outShape, a.shape)))
     if outDimLen<inDimLen:
         a = a.reshape(inShape)
@@ -83,6 +77,63 @@ def denormaliseFieldArray(a, numChannels, minx=None, maxx=None):
         a = a.reshape(inShape)
     return a
 
+def notnormaliseFieldArray(a, numChannels, minx=None, maxx=None):
+    inShape = a.shape
+    inDimLen = len(inShape)
+    a = numpy.squeeze(a)
+    outShape = a.shape
+    outDimLen = len(outShape)
+    if numChannels<=1:
+        if minx is None:
+            minx = numpy.min(a)
+        if maxx is None:
+            maxx = numpy.max(a)
+        a=a
+    else:
+        if minx is None:
+            minx = []
+        if maxx is None:
+            maxx = []
+        if outDimLen < 4:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                if len(minx) < numChannels:
+                    minx.append(numpy.min(a[:, :, channelIdx]))
+                if len(maxx) < numChannels:
+                    maxx.append(numpy.max(a[:, :, channelIdx]))
+                if numpy.fabs(maxx[channelIdx] - minx[channelIdx]) > 0:
+                    a=a
+        else:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                if len(minx) < numChannels:
+                    minx.append(numpy.min(a[:, :, :, channelIdx]))
+                if len(maxx) < numChannels:
+                    maxx.append(numpy.max(a[:, :, :, channelIdx]))
+                if numpy.fabs(maxx[channelIdx] - minx[channelIdx]) > 0:
+                    a=a
+    #print(("{} in vs {} out vs {} a-shape".format(inShape,outShape, a.shape)))
+    if outDimLen<inDimLen:
+        a = a.reshape(inShape)
+    return minx, maxx, a
+
+def notdenormaliseFieldArray(a, numChannels, minx=None, maxx=None):
+    inShape = a.shape
+    inDimLen = len(inShape)
+    a = numpy.squeeze(a)
+    outShape = a.shape
+    outDimLen = len(outShape)
+    if numChannels <= 1:
+        a=a
+    else:
+        if outDimLen < 4:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                a=a
+        else:
+            for channelIdx in itertools.islice(itertools.count(), 0, numChannels):
+                a=a
+    if outDimLen<inDimLen:
+        a = a.reshape(inShape)
+    return a
+   
 slice_size = (96,96)
 input_channels = 32
 target_channels = 32
@@ -276,28 +327,29 @@ if __name__ == '__main__':
         transform_shape_out = (slice_size[0], slice_size[1], shape_process_out[2], shape_process_out[3])
 
         for imagenr in itertools.islice(itertools.count(), 0, lenX):
-            minValX = None
-            maxValX = None
-            minValY = None
-            maxValY = None
+            minValX = numpy.zeros((32))
+            maxValX = numpy.ones((32))
+            minValY = numpy.zeros((32))
+            maxValY = numpy.ones((32))        
 
             file = h5py.File(inputFileArray[imagenr],'r')
             inImage = numpy.array(file['Data_X'], order='F').transpose()
             file.close()
-            predictIn = numpy.array(inImage)            
-            predictIn = transform.resize(predictIn, (slice_size[0], slice_size[1], channelNum_in), order=3, mode='reflect')
-            predictIn = predictIn.reshape(transform_shape_in)
-            minValX, maxValX, predictIn = normaliseFieldArray(predictIn, channelNum_in)
-            predictIn = predictIn.reshape((1,) + predictIn.shape)
-            predictIn = predictIn.astype(numpy.float32)
-
             file = h5py.File(inputFileArray[imagenr], 'r')
             outImage = numpy.array(file['Data_Y'], order='F').transpose()
-            file.close()            
+            file.close()   
+            predictIn = numpy.array(inImage)            
+            predictIn = transform.resize(predictIn, (slice_size[0], slice_size[1], channelNum_in), order=3, mode='reflect')
             outImage = transform.resize(outImage, (slice_size[0], slice_size[1],outImage.shape[2]), order=3, mode='reflect')
+            predictIn = predictIn.reshape(transform_shape_in)
             outImage = outImage.reshape(transform_shape_out)
-            minValY, maxValY, outImage = normaliseFieldArray(outImage, channelNum_out, minx=minValX, maxx=maxValX)
+            
+            minValX, maxValX, predictIn = notnormaliseFieldArray(predictIn, channelNum_in, minx = minValX, maxx = maxValX)
+            minValY, maxValY, outImage = notnormaliseFieldArray(outImage, channelNum_out, minx = minValY, maxx = maxValY)
+            
+            predictIn = predictIn.reshape((1,) + predictIn.shape)
             outImage = outImage.reshape((1,) + outImage.shape)
+            predictIn = predictIn.astype(numpy.float32)
             outImage = outImage.astype(numpy.float32)
 
             #==========================================================================================================#
@@ -314,7 +366,7 @@ if __name__ == '__main__':
             
             # input image #
             predictIn = predictIn.astype(otype)
-            predictIn = denormaliseFieldArray(predictIn[0], channelNum_in, minValX, maxValX)
+            predictIn = notdenormaliseFieldArray(predictIn[0], channelNum_in, minValX, maxValX)
             imgArr[imagenr,0,:,:,:] = predictIn[:,:,:,0]
             if fullRun==False:
                 plt.subplot(151)
@@ -323,7 +375,7 @@ if __name__ == '__main__':
             
             # predicted image #
             img = img.astype(otype)
-            img = denormaliseFieldArray(img[0], channelNum_out, minValX, maxValX)
+            img = notdenormaliseFieldArray(img[0], channelNum_out, minValX, maxValX)
             imgArr[imagenr, 1, :, :, :] = img[:,:,:,0]
             if fullRun==False:
                 plt.subplot(152)
@@ -332,7 +384,7 @@ if __name__ == '__main__':
             
             # target image #                
             outImage = outImage.astype(otype)
-            outImage = denormaliseFieldArray(outImage[0], channelNum_out, minValY, maxValY)
+            outImage = notdenormaliseFieldArray(outImage[0], channelNum_out, minValX, maxValX)
             imgArr[imagenr,2,:,:,:] = outImage[:,:,:,0]
             if fullRun==False:
                 plt.subplot(153)
@@ -388,4 +440,3 @@ if __name__ == '__main__':
         errArrFile = h5py.File(os.path.join(outPath,errArrFileName),'w')
         errArrFile.create_dataset('data', data=errArr.transpose());
         errArrFile.close()
-
